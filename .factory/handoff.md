@@ -8,7 +8,7 @@ verification 2.
 - Product: Pocket Draft Duel (`browser-game`)
 - Live URL: `https://pocket-draft-duel.sociobot.in`
 - Static implementation commit: `9430a3bd007c9ac02c18389c5e9cbd6aa8b33c11`
-- Documentation evidence commit: recorded in the report follow-up revision
+- Documentation evidence commit: `faa1093dc7d05a206e210e9fc8558202cf52f966`
 - Existing room-service build: `84973460a8db421f14bfaec3b87bc66d177cc1ba`
 
 The static client was deployed to the existing `sf-pocket-draft-duel` product
