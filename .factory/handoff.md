@@ -9,7 +9,8 @@
   deck building, chat, or ranked play.
 - First action: **Try it with sample data** opens the full local practice draft.
 - Implementation SHA: `f36ec0c5016f4ee396fe28d8cf22b9ea94d86768`
-- Documentation SHA: recorded by the follow-up documentation commit.
+- Documentation SHA: `5e36602aa536947a581c46edcdf0301113f90039`
+  (verification and handoff documentation; the next commit records this SHA).
 
 ## What is built
 
