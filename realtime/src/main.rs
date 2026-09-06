@@ -1084,6 +1084,7 @@ async fn main() {
         .and_then(|item| item.parse::<u16>().ok())
         .unwrap_or(8080);
     let db_path = format!("{data_dir}/pocket-draft-duel.sqlite");
+    println!("Opening product SQLite storage at {db_path}");
     if let Err(error) = std::fs::create_dir_all(&data_dir)
         .and_then(|_| init_db(&db_path).map_err(std::io::Error::other))
     {
