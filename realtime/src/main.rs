@@ -6,7 +6,7 @@ use axum::{
     response::{IntoResponse, Response},
     routing::{get, post},
 };
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, OpenFlags, params};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -245,13 +245,24 @@ fn clean_name(value: &str) -> ApiResult<String> {
     Ok(name.to_string())
 }
 
+fn open_db(path: &str) -> Result<Connection, rusqlite::Error> {
+    // The product service is limited to one active revision and one replica.
+    // Azure Files is durable but its SMB byte-range locks do not support
+    // SQLite's default rollback-journal locking reliably. SQLite's Unix VFS
+    // `nolock` URI and an in-memory journal are safe for this one process and
+    // avoid leaving a network journal lock behind during a deploy.
+    Connection::open_with_flags(
+        format!("file:{path}?nolock=1"),
+        OpenFlags::SQLITE_OPEN_READ_WRITE
+            | OpenFlags::SQLITE_OPEN_CREATE
+            | OpenFlags::SQLITE_OPEN_URI,
+    )
+}
+
 fn init_db(path: &str) -> Result<(), rusqlite::Error> {
-    let connection = Connection::open(path)?;
-    // Azure Files can retain an SMB lock briefly while a one-replica revision
-    // is being replaced. Waiting here keeps the durable room database intact
-    // instead of crash-looping into another lock attempt.
-    connection.busy_timeout(Duration::from_secs(90))?;
-    connection.execute_batch("PRAGMA journal_mode=DELETE; CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, state TEXT NOT NULL, updated_at INTEGER NOT NULL);")?;
+    let connection = open_db(path)?;
+    connection.busy_timeout(Duration::from_secs(5))?;
+    connection.execute_batch("PRAGMA journal_mode=MEMORY; CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, state TEXT NOT NULL, updated_at INTEGER NOT NULL);")?;
     Ok(())
 }
 
@@ -673,7 +684,7 @@ async fn create_room(
             "Room service lock failed.".into(),
         )
     })?;
-    let connection = Connection::open(state.db_path.as_str()).map_err(|_| {
+    let connection = open_db(state.db_path.as_str()).map_err(|_| {
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Could not open room storage.".into(),
@@ -730,7 +741,7 @@ async fn join_room(
             "Room service lock failed.".into(),
         )
     })?;
-    let connection = Connection::open(state.db_path.as_str()).map_err(|_| {
+    let connection = open_db(state.db_path.as_str()).map_err(|_| {
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Could not open room storage.".into(),
@@ -776,7 +787,7 @@ async fn read_room(
             "Room service lock failed.".into(),
         )
     })?;
-    let connection = Connection::open(state.db_path.as_str()).map_err(|_| {
+    let connection = open_db(state.db_path.as_str()).map_err(|_| {
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Could not open room storage.".into(),
@@ -801,7 +812,7 @@ async fn start_room(
             "Room service lock failed.".into(),
         )
     })?;
-    let connection = Connection::open(state.db_path.as_str()).map_err(|_| {
+    let connection = open_db(state.db_path.as_str()).map_err(|_| {
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Could not open room storage.".into(),
@@ -852,7 +863,7 @@ async fn draft(
             "Room service lock failed.".into(),
         )
     })?;
-    let connection = Connection::open(state.db_path.as_str()).map_err(|_| {
+    let connection = open_db(state.db_path.as_str()).map_err(|_| {
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Could not open room storage.".into(),
@@ -919,7 +930,7 @@ async fn battle(
             "Room service lock failed.".into(),
         )
     })?;
-    let connection = Connection::open(state.db_path.as_str()).map_err(|_| {
+    let connection = open_db(state.db_path.as_str()).map_err(|_| {
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Could not open room storage.".into(),
@@ -984,7 +995,7 @@ async fn rematch(
             "Room service lock failed.".into(),
         )
     })?;
-    let connection = Connection::open(state.db_path.as_str()).map_err(|_| {
+    let connection = open_db(state.db_path.as_str()).map_err(|_| {
         ApiError(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Could not open room storage.".into(),
