@@ -7,7 +7,7 @@ RUN mkdir src && printf 'fn main() {}\n' > src/main.rs && cargo build --release 
 COPY src ./src
 RUN cargo build --release
 
-FROM debian:bookworm-slim
+FROM debian:stable-slim
 ARG BUILD_SHA=dev
 RUN useradd --system --uid 10001 --create-home duel && mkdir /data && chown duel:duel /data
 COPY --from=build /src/target/release/pocket-draft-duel-realtime /usr/local/bin/pocket-draft-duel-realtime
