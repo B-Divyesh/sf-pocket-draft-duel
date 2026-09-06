@@ -4,3 +4,7 @@ dist/
 *.log
 graphify-out/
 .DS_Store
+test-results/
+playwright-report/
+realtime/target/
+*.tsbuildinfo

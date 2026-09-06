@@ -1,0 +1,33 @@
+{
+  "name": "pocket-draft-duel",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "npm run test:unit && npm run test:realtime && npm run test:realtime-browser && npm run test:browser",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test:browser": "playwright test",
+    "test:realtime": "bash tests/realtime-integration.sh",
+    "test:realtime-browser": "node tests/realtime-browser.mjs",
+    "test:claims": "playwright test --grep @claim",
+    "check": "npm run build && npm test",
+    "realtime:dev": "cd realtime && cargo run",
+    "realtime:test": "cd realtime && cargo test"
+  },
+  "dependencies": {
+    "@fontsource/dm-serif-display": "^5.2.8",
+    "@fontsource/source-sans-3": "^5.2.8"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
+    "@playwright/test": "1.58.2",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "playwright-core": "1.58.2",
+    "vite": "^7.1.12",
+    "vitest": "^3.2.4"
+  }
+}

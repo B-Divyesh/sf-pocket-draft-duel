@@ -1,0 +1,15 @@
+{
+  "slug": "pocket-draft-duel-host-set-unlock",
+  "name": "Pocket Draft Duel host set unlock",
+  "price_minor": 499,
+  "currency": "USD",
+  "price_type": "one_time_price",
+  "return_url": "https://pocket-draft-duel.sociobot.in/",
+  "price_evidence": "The product's Host set unlock panel and /terms define a $4.99 one-time host purchase. Billing registration is pending, so checkout and activation are deliberately unavailable and are not claimed to work.",
+  "paid_features": [
+    "Adds the balanced Stone draft set for rooms hosted by the licensed browser",
+    "Adds the balanced Market draft set for rooms hosted by the licensed browser",
+    "Does not add random packs, cards, a collection, or a subscription"
+  ],
+  "license_validation_path": "/api/license (planned product-owned room-service endpoint; unavailable until the separate billing-registration operator provisions the offer)"
+}

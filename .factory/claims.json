@@ -1,0 +1,58 @@
+[
+  {
+    "id": "practice-complete",
+    "claim": "Completes a full practice game from draft to result",
+    "where": "Demo game and README",
+    "test": "npm run test:claims -- --grep @claim:practice-complete",
+    "sandbox": "Fresh /demo browser context; choose three draft cards and three battle choices; assert result screen."
+  },
+  {
+    "id": "demo-reset",
+    "claim": "Reset demo starts a new sample draft without changing real room storage",
+    "where": "Demo banner",
+    "test": "npm run test:claims -- --grep @claim:demo-reset",
+    "sandbox": "Fresh /demo browser context with a pre-existing real room token; advance draft; reset; assert Draft 1 and unchanged token."
+  },
+  {
+    "id": "demo-local-only",
+    "claim": "Practice requests stay on the product origin",
+    "where": "Privacy page and demo description",
+    "test": "npm run test:claims -- --grep @claim:demo-local-only",
+    "sandbox": "Fresh /demo browser context records every request through the first sample action and asserts same-origin URLs only."
+  },
+  {
+    "id": "keyboard-draft",
+    "claim": "A player can lock a practice draft card with the keyboard",
+    "where": "README controls",
+    "test": "npm run test:claims -- --grep @claim:keyboard-draft",
+    "sandbox": "Fresh /demo browser context focuses a visible card and presses Enter; assert the next draft round appears."
+  },
+  {
+    "id": "settings-persist",
+    "claim": "The demo motion setting remains after reload",
+    "where": "Settings menu and README",
+    "test": "npm run test:claims -- --grep @claim:settings-persist",
+    "sandbox": "Fresh /demo browser context selects Reduced motion, reloads, and asserts the saved selection."
+  },
+  {
+    "id": "fixed-card-set",
+    "claim": "The practice draft uses exactly 18 fixed cards",
+    "where": "Landing facts and demo draft rule",
+    "test": "npm run test:unit -- -t @claim:fixed-card-set",
+    "sandbox": "The deterministic practice rules load the shipped card set and assert 18 distinct playable card identities."
+  },
+  {
+    "id": "no-account-practice",
+    "claim": "Practice starts without an account",
+    "where": "Landing facts and privacy section",
+    "test": "npm run test:claims -- --grep @claim:no-account-practice",
+    "sandbox": "Fresh /demo browser context reaches the first card choice without a sign-in form."
+  },
+  {
+    "id": "no-third-party-requests",
+    "claim": "The practice game loads without third-party requests",
+    "where": "Privacy page and README",
+    "test": "npm run test:claims -- --grep @claim:no-third-party-requests",
+    "sandbox": "Fresh /demo browser context records all load requests and asserts each is same-origin."
+  }
+]
