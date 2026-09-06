@@ -45,6 +45,13 @@ host_token="$(json_field "$host" token)"
 guest="$(request -X POST "$api_url/rooms/$code/join" --data '{"name":"Guest"}')"
 guest_token="$(json_field "$guest" token)"
 
+# A token from another room must not reveal this room. This is the product's
+# room-level tenant boundary: no accounts or shared tenant database exist.
+separate="$(request -X POST "$api_url/rooms" --data '{"name":"Separate","players":2,"setId":"marsh"}')"
+separate_token="$(json_field "$separate" token)"
+isolation_status="$(curl --silent -o "$test_dir/isolation-body" -w '%{http_code}' "$api_url/rooms/$code?token=$separate_token")"
+[[ "$isolation_status" == "401" ]]
+
 request -X POST "$api_url/rooms/$code/start" --data "{\"token\":\"$host_token\"}" >/dev/null
 
 for round in 1 2 3; do
@@ -79,4 +86,4 @@ done
 [[ "$rate_status" == "429" ]]
 grep -qi '^retry-after: 60' "$test_dir/rate-headers"
 
-echo "realtime integration passed: independent clients completed a room, reconnect persisted, and rate limits returned 429"
+echo "realtime integration passed: room isolation, independent clients, restart persistence, and rate limits returned 429"
