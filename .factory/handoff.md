@@ -1,5 +1,33 @@
 # Pocket Draft Duel handoff
 
+## Independent verification 2
+
+**Verdict: FAIL.** Independent QA on 2026-09-06 reviewed implementation
+`84973460a8db421f14bfaec3b87bc66d177cc1ba`, documentation evidence
+`076ff0e6fe68ba49a6f2b09c426d578c7299aed7`, and the report-only base
+`b3912b5b6440982e6d622c1a5078d0b80bbd0ccf`.
+
+The live sample and the real room-code game work from draft through three
+battles, result, reconnect, and rematch. A fresh desktop host and Pixel 5 guest
+completed the same live room. All 13 declared claim commands, the cold full
+suite, Rust tests, and the production build passed. Mobile Lighthouse scored
+100 in performance, accessibility, best practices, and SEO.
+
+Verification still found three issues:
+
+1. A stale saved room token causes an unbounded reconnect/render loop. A
+   controlled check recorded 30 requests in 600 ms; a room URL with no token
+   also gives no stable explanation or prefilled code.
+2. Demo reset/start links and several navigation/legal links have phone target
+   heights below the required 44 px.
+3. The public statement that collision priority rotates has no declared,
+   individually runnable claim test. This leaves one untested claim.
+
+The complete evidence and reproduction details are in
+`.factory/verification-2.md`. Screenshots, URL-verifier output, and Lighthouse
+JSON are under `/work/.evidence/verification-2-live/` and
+`/work/.evidence/verification-2-url/`.
+
 ## Current live release
 
 - Product: Pocket Draft Duel (`browser-game`)
