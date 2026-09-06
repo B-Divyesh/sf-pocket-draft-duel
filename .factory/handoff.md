@@ -12,6 +12,9 @@
   practice draft immediately.
 - Actual deployed implementation SHA:
   `84973460a8db421f14bfaec3b87bc66d177cc1ba`
+- Documentation and verification revision:
+  `076ff0e6fe68ba49a6f2b09c426d578c7299aed7` (the preceding handoff commit;
+  this report-only follow-up records that distinct revision).
 - Static deployment: `a77a6ba4-e474-431a-94e5-b35852e6aa54`.
 - Realtime image:
   `sociobotregistry.azurecr.io/sf-pocket-draft-duel-realtime@sha256:9c9cc334815df9df33a6886b086fe84c82a21b1b28c963daa73f67f4f9846308`.
