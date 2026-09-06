@@ -9,9 +9,8 @@ RUN cargo build --release
 
 FROM debian:stable-slim
 ARG BUILD_SHA=dev
-RUN useradd --system --uid 10001 --create-home duel && mkdir /data && chown duel:duel /data
+RUN mkdir /data
 COPY --from=build /src/target/release/pocket-draft-duel-realtime /usr/local/bin/pocket-draft-duel-realtime
-USER duel
 ENV DATA_DIR=/data
 ENV PORT=8080
 ENV BUILD_SHA=${BUILD_SHA}
