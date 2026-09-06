@@ -9,8 +9,8 @@
   deck building, chat, or ranked play.
 - First action: **Try it with sample data** opens the full local practice draft.
 - Implementation SHA: `f36ec0c5016f4ee396fe28d8cf22b9ea94d86768`
-- Documentation SHA: `5e36602aa536947a581c46edcdf0301113f90039`
-  (verification and handoff documentation; the next commit records this SHA).
+- Documentation candidate SHA: `c2afc0b165ef5d6710f3bb6065ad120a87850123`
+  (the implementation and its latest documentation revision differ).
 
 ## What is built
 
@@ -85,3 +85,20 @@ gzip; the browser requests only the required local Latin font subsets.
    genuine server-side license validation before enabling Stone or Market.
 4. Verify the live product URL on fresh desktop and phone browsers after DNS is
    available.
+
+## Independent verification 1 (2026-09-06 UTC)
+
+**Verdict: FAIL.** The live hostname now resolves and serves the same candidate
+assets verified locally. Fresh desktop and phone checks completed the labelled
+practice draft, its three battles, result, keyboard pick, and reset safely.
+All eight declared claim commands passed separately; the local owned SQLite
+room service also passed its two-client/reconnect/rate-limit run.
+
+The product still cannot complete its real job at the public URL: the live
+`/api` path is the static HTML fallback, and creating a room returns HTTP 405.
+No live independent-player, persistence, or rematch run is therefore possible.
+The live response is also missing the CSP and Permissions-Policy declared in
+`staticwebapp.config.json`. The report records four findings and four unlisted
+public realtime-claim groups, including an initial clean `npm test` timeout
+while Rust compiled. See `.factory/verification-1.md` for evidence and next
+steps.
