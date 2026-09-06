@@ -89,5 +89,12 @@
     "where": "Room-service README",
     "test": "npm run test:realtime-claims -- --grep @claim:room-rate-limit",
     "sandbox": "Fresh temporary SQLite service sends 60 room reads for one forwarded client IP, then asserts the next read is 429 with Retry-After: 60."
+  },
+  {
+    "id": "rotating-draft-priority",
+    "claim": "Live room collision priority rotates to the next seat each draft round",
+    "where": "Demo draft rule, README, and room-service README",
+    "test": "npm run test:realtime-claims -- --grep @claim:rotating-draft-priority",
+    "sandbox": "Fresh three-player SQLite room has every seat request the same visible card in all three draft rounds; it observes one winner per collision and verifies the winning seat advances through all three seats."
   }
 ]

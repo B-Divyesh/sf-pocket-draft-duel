@@ -72,6 +72,48 @@ test('@claim:no-third-party-requests loads the practice game without third-party
   expect(requests.every((url) => new URL(url).origin === origin)).toBe(true);
 });
 
+test('stops an invalid room reconnect and keeps the room code ready to join again', async ({ page }) => {
+  let reconnectRequests = 0;
+  await page.addInitScript(() => localStorage.setItem('pocket-draft-duel:room:STALE1', 'stale-token'));
+  await page.route(/\/api\/rooms\/STALE1\?token=stale-token$/, async (route) => {
+    reconnectRequests += 1;
+    await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'This reconnect token does not match the room.' }) });
+  });
+  await page.goto('/?room=STALE1');
+  await expect(page.getByRole('alert')).toHaveText(/cannot reconnect this seat/i);
+  await expect(page.locator('form[data-form="join-room"] input[name="code"]')).toHaveValue('STALE1');
+  await page.waitForTimeout(500);
+  expect(reconnectRequests).toBe(1);
+  await expect(page.evaluate(() => localStorage.getItem('pocket-draft-duel:room:STALE1'))).resolves.toBeNull();
+});
+
+test('shows a stable join path when a room link has no saved reconnect token', async ({ page }) => {
+  let roomRequests = 0;
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.includes('/api/rooms/NOCODE')) roomRequests += 1;
+  });
+  await page.goto('/?room=NOCODE');
+  await expect(page.getByRole('alert')).toHaveText(/does not have a reconnect token/i);
+  await expect(page.locator('form[data-form="join-room"] input[name="code"]')).toHaveValue('NOCODE');
+  expect(roomRequests).toBe(0);
+});
+
+test('keeps demo exits and site links at least 44 pixels tall and wide', async ({ page }) => {
+  const expectTouchTarget = async (locator: import('@playwright/test').Locator) => {
+    const box = await locator.boundingBox();
+    expect(box, 'The control should have a visible box.').not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(44);
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  };
+  await page.goto('/demo');
+  await expectTouchTarget(page.getByRole('button', { name: 'Reset demo' }));
+  await expectTouchTarget(page.getByRole('link', { name: 'Start for real' }));
+  await page.goto('/');
+  await expectTouchTarget(page.getByRole('link', { name: 'Pocket Draft Duel home' }));
+  await expectTouchTarget(page.locator('footer').getByRole('link', { name: 'Privacy' }));
+  await expectTouchTarget(page.locator('footer').getByRole('link', { name: 'Terms' }));
+});
+
 test('has no serious or critical accessibility issues on the first practice screen', async ({ page }) => {
   await page.goto('/demo');
   const results = await new AxeBuilder({ page }).analyze();

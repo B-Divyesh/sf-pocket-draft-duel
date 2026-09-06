@@ -46,8 +46,9 @@ VITE_REALTIME_URL=http://127.0.0.1:8080 npm run dev
 Each browser receives a random reconnect token in localStorage after it creates
 or joins a room. The service uses SQLite in `$DATA_DIR`, never a shared
 database. Pending picks and other hands do not appear in a player's room
-response. The service resolves collisions with a rotating priority order and
-uses the selected card and tactic values for each battle record.
+response. The service resolves collisions by moving priority to the next seat
+each draft round and uses the selected card and tactic values for each battle
+record.
 
 For production, run `realtime/Dockerfile` as one product-owned replica with a
 durable `/data` volume, health probe `GET /health`, and link it as the Static

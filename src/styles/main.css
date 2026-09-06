@@ -24,7 +24,7 @@ button, a, select, input { -webkit-tap-highlight-color: transparent; }
 button, select, input { min-height: 44px; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
-a { color: var(--forest-deep); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; color: var(--forest-deep); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .skip-link { position: fixed; z-index: 20; left: 12px; top: -60px; background: #fff; color: var(--forest-deep); padding: 10px 14px; font-weight: 700; }
 .skip-link:focus { top: 12px; }
@@ -108,7 +108,7 @@ input, select { width: 100%; padding: 8px 10px; border: 2px solid var(--forest);
 .price { min-width: 182px; display: grid; gap: 3px; text-align: right; }.price strong { font-family: 'DM Serif Display', Georgia, serif; font-size: 2.6rem; }.price span { font-size: .9rem; }.price button { margin-top: 9px; border-color: #fffaf0; color: #fffaf0; background: transparent; font-size: .8rem; }.price small { color: #f5ddaf; font-size: .75rem; }
 
 .demo-banner { width: min(1180px, calc(100% - 32px)); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0 auto 12px; padding: 9px 12px; color: #fffdf3; background: var(--brick); font-size: .9rem; }
-.demo-banner > span { margin-right: auto; }.demo-banner a, .text-button { min-height: 36px; color: #fffdf3; background: transparent; border: 0; text-decoration: underline; font-weight: 700; }
+.demo-banner > span { margin-right: auto; }.demo-banner a, .text-button { min-height: 44px; color: #fffdf3; background: transparent; border: 0; text-decoration: underline; font-weight: 700; }
 .game-live { margin-top: clamp(18px, 4vw, 42px); padding: clamp(14px, 3vw, 28px); }
 .phase-panel { position: relative; z-index: 1; padding: 20px 0; border-top: 2px solid var(--forest); }.phase-heading { max-width: 700px; }.phase-heading h2 { margin-bottom: 9px; }.phase-heading p:last-child { margin-bottom: 22px; }.draft-rule { margin-top: 17px; color: var(--muted); font-size: .88rem; }
 .battle-choice { display: grid; grid-template-columns: 1.4fr .6fr; gap: 24px; align-items: start; }.battle-choice h3 { margin-bottom: 11px; }.battle-choice .primary { margin-top: 16px; }.tactics { display: grid; gap: 9px; }.tactic { min-height: 62px; display: grid; grid-template-columns: 1fr; gap: 1px; padding: 8px 10px; text-align: left; border: 2px solid var(--forest); background: #fffdf3; color: var(--forest-deep); }.tactic strong { font-family: 'DM Serif Display', Georgia, serif; font-size: 1.15rem; }.tactic span { font-size: .8rem; }.tactic.is-selected { outline: 3px solid var(--brick); outline-offset: 1px; background: #ffefbc; }.tactic-advance { border-left: 8px solid var(--brick); }.tactic-brace { border-left: 8px solid var(--forest); }.tactic-feint { border-left: 8px solid var(--mustard); }

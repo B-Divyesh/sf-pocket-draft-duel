@@ -36,7 +36,8 @@ reduced motion or the in-game reduced-motion setting. There is no looping art,
 flash, timer animation, or sound.
 
 Phone layout keeps the three-card choice readable, collapses player seats to
-two columns, and gives every action a 44px target. The wide layout lets the
+two columns, and gives every action a 44 × 44 CSS px target. This includes the
+demo exits, wordmark, navigation, and legal links as well as game controls. The wide layout lets the
 table feel like a sheet spread across a table without using a generic hero card.
 
 ## Card art provenance

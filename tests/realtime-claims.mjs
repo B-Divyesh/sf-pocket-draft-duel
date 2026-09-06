@@ -240,12 +240,40 @@ async function rateLimitClaim() {
   });
 }
 
+async function rotatingDraftPriorityClaim() {
+  await withService(async ({ api }) => {
+    const room = await createRoom(api, 3);
+    status(await api(`/rooms/${room.code}/start`, {
+      method: 'POST', body: { token: room.players[0].token },
+    }), 200, 'Host should start the room');
+    const contestedWinners = [];
+    for (let round = 0; round < 3; round += 1) {
+      const before = await roomView(api, room.code, room.players[0].token);
+      const contestedCard = before.offers[0];
+      for (const player of room.players) {
+        status(await api(`/rooms/${room.code}/draft`, {
+          method: 'POST', body: { token: player.token, cardId: contestedCard },
+        }), 200, 'Every seat should be able to request the same visible card');
+      }
+      const views = await Promise.all(room.players.map((player) => roomView(api, room.code, player.token)));
+      const winners = views.filter((view) => view.player.cards.includes(contestedCard));
+      assert.equal(winners.length, 1, 'Exactly one seat should receive a contested card');
+      contestedWinners.push(winners[0].player.id);
+    }
+    const winnerSeats = contestedWinners.map((id) => room.players.findIndex((player) => player.id === id));
+    assert.equal(new Set(winnerSeats).size, 3, 'Each seat should receive one contested card across three draft rounds');
+    assert.equal(winnerSeats[1], (winnerSeats[0] + 1) % 3, 'Collision priority should move to the next seat in Draft 2');
+    assert.equal(winnerSeats[2], (winnerSeats[1] + 1) % 3, 'Collision priority should move to the next seat in Draft 3');
+  });
+}
+
 const claims = {
   '@claim:live-room-code': liveRoomCodeClaim,
   '@claim:private-simultaneous-picks': privatePicksClaim,
   '@claim:reconnect-persistence': reconnectClaim,
   '@claim:deterministic-resolution': deterministicResolutionClaim,
   '@claim:room-rate-limit': rateLimitClaim,
+  '@claim:rotating-draft-priority': rotatingDraftPriorityClaim,
 };
 
 if (requested && !claims[requested]) {

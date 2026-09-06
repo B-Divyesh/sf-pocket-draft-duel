@@ -43,6 +43,15 @@ let selectedRoomTactic: Stat | '' = '';
 let room: RoomView | null = null;
 let roomError = '';
 let roomPoll: number | undefined;
+let roomLoadInFlight = false;
+let recoveredRoomCode = '';
+
+class RoomServiceError extends Error {
+  constructor(message: string, readonly status: number, readonly retryAfter: string | null) {
+    super(message);
+    this.name = 'RoomServiceError';
+  }
+}
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]!);
@@ -59,6 +68,11 @@ function route(): Route {
 }
 
 function isDemo(): boolean { return route() === 'demo'; }
+
+function roomCodeFromLocation(): string | null {
+  const code = new URLSearchParams(window.location.search).get('room')?.trim().toUpperCase();
+  return code && /^[A-Z0-9]{6}$/.test(code) ? code : null;
+}
 
 function readSettings(demo: boolean): Settings {
   try {
@@ -104,6 +118,9 @@ function titleFor(current: Route): string {
 function navigate(path: string): void {
   window.history.pushState({}, '', path);
   stopPolling();
+  room = null;
+  roomError = '';
+  recoveredRoomCode = '';
   if (path === '/demo') {
     practice = loadPractice();
     settings = readSettings(true);
@@ -111,6 +128,7 @@ function navigate(path: string): void {
     settings = readSettings(false);
   }
   render(true);
+  recoverRoomFromLocation();
   if (window.location.hash) requestAnimationFrame(() => document.querySelector(window.location.hash)?.scrollIntoView({ behavior: settings.motion === 'reduced' ? 'auto' : 'smooth' }));
 }
 
@@ -248,10 +266,11 @@ function roomGame(): string {
 }
 
 function realRoomPanel(): string {
+  const suggestedRoomCode = roomCodeFromLocation() || '';
   return `<section class="real-room" id="real-room" aria-labelledby="real-room-heading"><h2 id="real-room-heading">Play with friends</h2><p>Make a room, share its six-letter code, then all players choose in the same room.</p>
     <div class="real-forms"><form data-form="host-room"><h3>Host a room</h3><label>Your name<input required maxlength="18" name="name" value="Host" autocomplete="nickname" /></label><label>Players<select name="players"><option value="2">2 players</option><option value="3">3 players</option><option value="4" selected>4 players</option></select></label><button class="secondary" type="submit">Create room code</button></form>
-    <form data-form="join-room"><h3>Join a room</h3><label>Room code<input required maxlength="6" pattern="[A-Za-z0-9]{6}" name="code" autocapitalize="characters" /></label><label>Your name<input required maxlength="18" name="name" autocomplete="nickname" /></label><button class="secondary" type="submit">Join room</button></form></div>
-    ${roomError ? `<p class="form-error" role="alert">${escapeHtml(roomError)}</p>` : ''}<p class="quiet">The shared-room service must be connected for live rooms. Practice does not use it.</p></section>`;
+    <form data-form="join-room"><h3>Join a room</h3><label>Room code<input required maxlength="6" pattern="[A-Za-z0-9]{6}" name="code" value="${escapeHtml(suggestedRoomCode)}" autocapitalize="characters" aria-describedby="join-room-help" /></label><label>Your name<input required maxlength="18" name="name" autocomplete="nickname" /></label><button class="secondary" type="submit">Join room</button></form></div>
+    ${roomError ? `<p class="form-error" role="alert">${escapeHtml(roomError)}</p>` : ''}<p class="quiet" id="join-room-help">The shared-room service must be connected for live rooms. Practice does not use it.</p></section>`;
 }
 
 function paidMarkup(): string {
@@ -259,7 +278,7 @@ function paidMarkup(): string {
 }
 
 function homePage(): string {
-  const hasRoomCode = new URLSearchParams(window.location.search).get('room');
+  const hasRoomCode = roomCodeFromLocation();
   return `<section class="intro" aria-labelledby="page-heading"><div class="intro-copy"><p class="eyebrow">Pocket Draft Duel</p><h1 id="page-heading" tabindex="-1">Draft cards and duel with friends</h1><p class="lede">For two to four friends who want a complete tactical game with three quick battles.</p><div class="intro-actions"><a class="primary" href="/demo" data-route>Try it with sample data</a><span>Starts a full practice draft now.</span></div><ul class="facts"><li>2–4 players by room code</li><li>Fixed 18-card set</li><li>Practice starts with no account</li></ul></div>${homePreview()}</section>${hasRoomCode && room ? roomGame() : realRoomPanel()}<section class="how" aria-labelledby="how-heading"><h2 id="how-heading">How a room works</h2><ol><li><strong>Make a room.</strong><span>Share its code with two to four friends.</span></li><li><strong>Lock draft picks.</strong><span>Everyone picks together from one shared row.</span></li><li><strong>Fight three battles.</strong><span>Use each drafted card once and see the result.</span></li></ol></section><section class="privacy-note" aria-labelledby="privacy-heading"><h2 id="privacy-heading">What it does not do</h2><p>The game does not ask you to create an account. It has no ranked ladder, chat, custom cards, or random packs.</p><p>Practice data stays in a separate browser-only sample area. Live room data belongs to the room service.</p></section>${paidMarkup()}`;
 }
 
@@ -304,8 +323,7 @@ function render(moveFocus = false): void {
   document.documentElement.dataset.motion = settings.motion;
   let content = current === 'home' ? homePage() : current === 'demo' ? renderPracticeGame() : current === 'privacy' || current === 'terms' ? legalPage(current) : notFoundPage();
   app.innerHTML = shell(content, current);
-  if (current === 'home' && new URLSearchParams(window.location.search).get('room') && !room) loadRoom();
-  if (room && current === 'home' && new URLSearchParams(window.location.search).get('room')) startPolling();
+  if (room && current === 'home' && roomCodeFromLocation()) startPolling();
   if (moveFocus) {
     const heading = document.querySelector<HTMLElement>('h1');
     heading?.focus();
@@ -318,7 +336,7 @@ function tokenFor(code: string): string | null { return localStorage.getItem(TOK
 async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, { headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }, ...options });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error((body as { error?: string }).error || `Room service returned ${response.status}.`);
+  if (!response.ok) throw new RoomServiceError((body as { error?: string }).error || `Room service returned ${response.status}.`, response.status, response.headers.get('Retry-After'));
   return body as T;
 }
 
@@ -328,6 +346,7 @@ async function createRoom(data: FormData): Promise<void> {
     const response = await api<{ code: string; token: string; room: RoomView }>('/rooms', { method: 'POST', body: JSON.stringify({ name: data.get('name'), players: Number(data.get('players')), setId: 'marsh' }) });
     localStorage.setItem(TOKEN_KEY(response.code), response.token);
     room = response.room;
+    recoveredRoomCode = response.code;
     window.history.replaceState({}, '', `/?room=${response.code}`);
     render();
   } catch (error) {
@@ -343,6 +362,7 @@ async function joinRoom(data: FormData): Promise<void> {
     const response = await api<{ code: string; token: string; room: RoomView }>(`/rooms/${encodeURIComponent(code)}/join`, { method: 'POST', body: JSON.stringify({ name: data.get('name') }) });
     localStorage.setItem(TOKEN_KEY(response.code), response.token);
     room = response.room;
+    recoveredRoomCode = response.code;
     window.history.replaceState({}, '', `/?room=${response.code}`);
     render();
   } catch (error) {
@@ -351,28 +371,53 @@ async function joinRoom(data: FormData): Promise<void> {
   }
 }
 
-async function loadRoom(): Promise<void> {
-  const code = new URLSearchParams(window.location.search).get('room')?.toUpperCase();
-  if (!code) return;
+async function loadRoom(code: string): Promise<void> {
+  if (roomLoadInFlight) return;
   const token = tokenFor(code);
   if (!token) {
-    roomError = 'This browser does not have a reconnect token for that room. Join with the room code instead.';
+    stopPolling();
+    room = null;
+    roomError = 'This browser does not have a reconnect token for that room. Enter your name to join with the room code.';
+    render();
     return;
   }
+  roomLoadInFlight = true;
   try {
     room = await api<RoomView>(`/rooms/${encodeURIComponent(code)}?token=${encodeURIComponent(token)}`);
     roomError = '';
     render();
   } catch (error) {
-    roomError = error instanceof Error ? `Could not reconnect: ${error.message}` : 'Could not reconnect to this room.';
+    stopPolling();
     room = null;
+    if (error instanceof RoomServiceError && error.status === 401) {
+      localStorage.removeItem(TOKEN_KEY(code));
+      roomError = 'This saved room link cannot reconnect this seat. Enter your name to join with the room code.';
+    } else if (error instanceof RoomServiceError && error.status === 404) {
+      roomError = 'This room code no longer exists. Check the code with the host, then try again.';
+    } else if (error instanceof RoomServiceError && error.status === 429) {
+      roomError = `Room requests are paused. Wait ${error.retryAfter || 'a minute'} before trying again.`;
+    } else {
+      roomError = error instanceof Error ? `Could not reconnect: ${error.message}` : 'Could not reconnect to this room.';
+    }
     render();
+  } finally {
+    roomLoadInFlight = false;
   }
+}
+
+function recoverRoomFromLocation(): void {
+  const code = roomCodeFromLocation();
+  if (!code || room || roomLoadInFlight || recoveredRoomCode === code) return;
+  recoveredRoomCode = code;
+  void loadRoom(code);
 }
 
 function startPolling(): void {
   if (roomPoll) return;
-  roomPoll = window.setInterval(() => { void loadRoom(); }, 1500);
+  roomPoll = window.setInterval(() => {
+    const code = roomCodeFromLocation();
+    if (code && room) void loadRoom(code);
+  }, 1500);
 }
 
 async function roomAction(path: string, body?: object): Promise<void> {
@@ -438,8 +483,17 @@ document.addEventListener('change', (event) => {
   }
 });
 
-window.addEventListener('popstate', () => { stopPolling(); room = null; practice = null; render(true); });
+window.addEventListener('popstate', () => {
+  stopPolling();
+  room = null;
+  roomError = '';
+  recoveredRoomCode = '';
+  practice = null;
+  render(true);
+  recoverRoomFromLocation();
+});
 
 if (route() === 'demo') practice = loadPractice();
 settings = readSettings(isDemo());
 render();
+recoverRoomFromLocation();

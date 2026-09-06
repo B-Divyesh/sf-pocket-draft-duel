@@ -19,8 +19,8 @@ or third-party APIs.
 
 The service has `GET /health` and room endpoints below `/rooms`. It stores
 rooms and reconnect tokens in product SQLite. A room response shows only a
-player's own hand, keeps pending choices private, rotates collision priority,
-and records each chosen card and tactic value. It returns `429` with
+player's own hand, keeps pending choices private, moves collision priority to
+the next seat each draft round, and records each chosen card and tactic value. It returns `429` with
 `Retry-After: 60` after 60 room requests per minute.
 
 `cargo test` verifies the rule engine. `npm run test:realtime` starts the real
