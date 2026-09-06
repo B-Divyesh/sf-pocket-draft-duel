@@ -5,7 +5,7 @@ WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && printf 'fn main() {}\n' > src/main.rs && cargo build --release && rm -rf src
 COPY src ./src
-RUN cargo build --release
+RUN touch src/main.rs && cargo build --release
 
 FROM debian:stable-slim
 ARG BUILD_SHA=dev
