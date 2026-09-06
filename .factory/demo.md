@@ -11,5 +11,5 @@ saved** and provides **Reset demo**, which removes only the demo run.
 
 **Start for real** discards the demo context by leaving `/demo`; it does not
 carry a practice card, score, or player name into a real room. The live room
-path is separate and requires the product-owned room service described in
+path is separate and uses the product-owned room service described in
 `realtime/README.md`.

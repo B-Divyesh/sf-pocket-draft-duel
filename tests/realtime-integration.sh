@@ -15,9 +15,9 @@ cleanup() {
 trap cleanup EXIT
 
 start_server() {
-  (cd "$repo_dir/realtime" && DATA_DIR="$data_dir" PORT="$port" cargo run --quiet >"$log_file" 2>&1) &
+  DATA_DIR="$data_dir" PORT="$port" "$repo_dir/realtime/target/debug/pocket-draft-duel-realtime" >"$log_file" 2>&1 &
   server_pid=$!
-  for _ in $(seq 1 50); do
+  for _ in $(seq 1 150); do
     if curl --silent --fail "http://127.0.0.1:$port/health" >/dev/null; then return; fi
     sleep .2
   done
@@ -33,6 +33,7 @@ request() {
   curl --silent --show-error --fail-with-body -H 'content-type: application/json' "$@"
 }
 
+(cd "$repo_dir/realtime" && cargo build --quiet)
 start_server
 health="$(curl --silent --fail "http://127.0.0.1:$port/health")"
 [[ "$(json_field "$health" status)" == "ok" ]]

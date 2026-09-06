@@ -12,7 +12,7 @@ let browser;
 
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 async function waitFor(url) {
-  for (let retry = 0; retry < 80; retry += 1) {
+  for (let retry = 0; retry < 200; retry += 1) {
     try { if ((await fetch(url)).ok) return; } catch { /* wait for the owned process */ }
     await sleep(150);
   }
@@ -22,8 +22,7 @@ function check(value, message) { if (!value) throw new Error(message); }
 function stop(child) { if (child && !child.killed) child.kill('SIGTERM'); }
 
 try {
-  roomProcess = spawn('cargo', ['run', '--quiet'], {
-    cwd: join(root, 'realtime'),
+  roomProcess = spawn(join(root, 'realtime', 'target', 'debug', 'pocket-draft-duel-realtime'), [], {
     env: { ...process.env, DATA_DIR: dataDir, PORT: '18788' },
     stdio: 'ignore',
   });
@@ -76,7 +75,9 @@ try {
   await host.screenshot({ path: join(dataDir, 'real-room-result.png'), fullPage: true });
   await host.reload();
   await host.getByRole('heading', { name: /won the duel/ }).waitFor();
-  console.log('realtime browser passed: two independent browsers completed a room, saw a result, and reconnected after reload');
+  await host.getByRole('button', { name: 'Start rematch' }).click();
+  await host.getByText('Draft 1 of 3').waitFor();
+  console.log('realtime browser passed: two independent browsers completed a room, saw a result, reconnected after reload, and started a rematch');
 } finally {
   await browser?.close();
   stop(webProcess);

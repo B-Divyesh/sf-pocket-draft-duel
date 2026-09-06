@@ -15,9 +15,11 @@ banner can reset the sample or return to the real-room start.
 Two to four friends who want a fresh tactical game by room code, without a
 physical deck, login, deck building, or collectible cards.
 
-## Run the static game
+## Run the game
 
-Prerequisites: Node 22+ and npm.
+Prerequisites: Node 22+ and npm. Real-room verification also needs a current
+Rust stable toolchain with Cargo. `npm test` builds the included Rust room
+service before it starts its browser clients, so it works from a clean clone.
 
 ```sh
 npm install
@@ -36,20 +38,21 @@ the supplied Rust/SQLite service separately during development:
 
 ```sh
 cd realtime
-DATA_DIR=/tmp/pocket-draft-duel-data PORT=8787 cargo run
+DATA_DIR=/tmp/pocket-draft-duel-data PORT=8080 cargo run
 cd ..
-VITE_REALTIME_URL=http://127.0.0.1:8787 npm run dev
+VITE_REALTIME_URL=http://127.0.0.1:8080 npm run dev
 ```
 
 Each browser receives a random reconnect token in localStorage after it creates
 or joins a room. The service uses SQLite in `$DATA_DIR`, never a shared
-database. It is server-authoritative: pending picks and other hands do not
-appear in a player's room response; the service resolves collisions with a
-rotating priority order and resolves battles from the fixed card values.
+database. Pending picks and other hands do not appear in a player's room
+response. The service resolves collisions with a rotating priority order and
+uses the selected card and tactic values for each battle record.
 
 For production, run `realtime/Dockerfile` as one product-owned replica with a
-durable `/data` volume, health probe `GET /health`, and a proxy from `/api` to
-the service. Details are in `realtime/README.md`.
+durable `/data` volume, health probe `GET /health`, and link it as the Static
+Web App backend so the public `/api` path reaches the service. Details are in
+`realtime/README.md`.
 
 ## Verify
 
@@ -65,10 +68,16 @@ browser checks. Browser checks include the sample from draft to result,
 demo reset isolation, keyboard play, persisted motion choice, privacy request
 scope, route titles, console errors, and axe serious/critical violations.
 
-To run only a public claim check:
+To run only a practice claim check:
 
 ```sh
 npm run test:claims -- --grep @claim:practice-complete
+```
+
+To run an owned room-service claim check:
+
+```sh
+npm run test:realtime-claims -- --grep @claim:live-room-code
 ```
 
 The build writes the static site to `dist/`.
@@ -87,11 +96,11 @@ claim that purchase or activation works.
 
 ## Deploy
 
-Deploy `dist/` as the static site. Keep `staticwebapp.config.json` with the
-deployment for headers and SPA routing. The factory must separately deploy the
-included product-owned realtime service with its durable `/data` volume before
-advertising live room codes. Do not use a shared database or more than one
-realtime replica.
+Deploy `dist/` as the static site. `npm run build` copies
+`staticwebapp.config.json` into `dist/` for headers and SPA routing. Deploy the
+included product-owned realtime service with its durable `/data` volume, one
+replica, and link it as the static site's backend. Do not use a shared database
+or more than one realtime replica.
 
 ## License
 

@@ -54,5 +54,40 @@
     "where": "Privacy page and README",
     "test": "npm run test:claims -- --grep @claim:no-third-party-requests",
     "sandbox": "Fresh /demo browser context records all load requests and asserts each is same-origin."
+  },
+  {
+    "id": "live-room-code",
+    "claim": "Makes 2–4 player room codes; two friends can finish a room and start a rematch",
+    "where": "Landing page, live room table, and README",
+    "test": "npm run test:realtime-claims -- --grep @claim:live-room-code",
+    "sandbox": "Fresh temporary SQLite service creates and fills 2-, 3-, and 4-player rooms, then two independent tokens draft, battle to a result, and begin a rematch."
+  },
+  {
+    "id": "private-simultaneous-picks",
+    "claim": "Live room picks stay hidden until every player locks one",
+    "where": "Landing preview, live room table, and room-service README",
+    "test": "npm run test:realtime-claims -- --grep @claim:private-simultaneous-picks",
+    "sandbox": "Fresh two-player SQLite room locks one draft pick, observes the other player’s public response, then verifies the next draft releases only after the second lock."
+  },
+  {
+    "id": "reconnect-persistence",
+    "claim": "A live room and reconnect token survive a room-service restart",
+    "where": "README and room-service README",
+    "test": "npm run test:realtime-claims -- --grep @claim:reconnect-persistence",
+    "sandbox": "Fresh temporary SQLite room is created, its owned service is restarted, and the original token restores the same seat and players."
+  },
+  {
+    "id": "deterministic-resolution",
+    "claim": "A battle record uses the chosen card and tactic values to settle its winner",
+    "where": "Game rules, README, and room-service README",
+    "test": "npm run test:realtime-claims -- --grep @claim:deterministic-resolution",
+    "sandbox": "Fresh two-player SQLite room completes a draft, submits a visibly higher and lower card/tactic value, and asserts the returned battle record values and winner."
+  },
+  {
+    "id": "room-rate-limit",
+    "claim": "The live room service returns 429 and Retry-After after 60 requests in a minute",
+    "where": "Room-service README",
+    "test": "npm run test:realtime-claims -- --grep @claim:room-rate-limit",
+    "sandbox": "Fresh temporary SQLite service sends 60 room reads for one forwarded client IP, then asserts the next read is 429 with Retry-After: 60."
   }
 ]

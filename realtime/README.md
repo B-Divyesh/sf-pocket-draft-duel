@@ -6,21 +6,24 @@ SQLite at `$DATA_DIR/pocket-draft-duel.sqlite`; mount durable product storage at
 
 ```sh
 cd realtime
-DATA_DIR=/data PORT=8787 cargo run
+DATA_DIR=/data PORT=8080 cargo run
 ```
 
 For a container deployment, build this directory and mount a persistent `/data`
-volume. Put it behind the static site's `/api` path, or build the static site
-with `VITE_REALTIME_URL` set to this service's public HTTPS origin. The service
-does not use accounts or third-party APIs.
+volume. Link the product-owned container app as the static site's backend so
+the static site sends its `/api` path here. The service does not use accounts
+or third-party APIs.
 
-The service has `GET /health` and room endpoints below `/rooms`. It persists
-reconnect tokens, hides pending choices and opponent hands, resolves draft
-conflicts in a rotating server order, resolves three battles deterministically,
-and returns `429` with `Retry-After: 60` after 60 room requests per minute.
+The service has `GET /health` and room endpoints below `/rooms`. It stores
+rooms and reconnect tokens in product SQLite. A room response shows only a
+player's own hand, keeps pending choices private, rotates collision priority,
+and records each chosen card and tactic value. It returns `429` with
+`Retry-After: 60` after 60 room requests per minute.
 
 `cargo test` verifies the rule engine. `npm run test:realtime` starts the real
 HTTP service against a temporary SQLite directory, completes a two-client game,
 restarts it, reconnects, and verifies rate limiting. `npm run test:realtime-
-browser` opens two independent browser contexts against that service and plays
-to a visible result before reloading the host session.
+browser` opens two independent browser contexts against that service, plays to
+a visible result, reloads the host session, and starts a rematch. Run each
+public room claim independently with `npm run test:realtime-claims -- --grep
+@claim:<id>`; the claim ids are in `.factory/claims.json`.
