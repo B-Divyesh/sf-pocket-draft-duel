@@ -1111,7 +1111,7 @@ async fn main() {
         db_lock: Arc::new(Mutex::new(())),
         requests: Arc::new(Mutex::new(HashMap::new())),
     };
-    let app = Router::new()
+    let room_routes = Router::new()
         .route("/health", get(health))
         .route("/rooms", post(create_room))
         .route("/rooms/{code}", get(read_room))
@@ -1119,7 +1119,13 @@ async fn main() {
         .route("/rooms/{code}/start", post(start_room))
         .route("/rooms/{code}/draft", post(draft))
         .route("/rooms/{code}/battle", post(battle))
-        .route("/rooms/{code}/rematch", post(rematch))
+        .route("/rooms/{code}/rematch", post(rematch));
+    // The service also serves its own direct paths for development. Azure
+    // Static Web Apps preserves the `/api` prefix for a linked backend, so
+    // production requests use this identical nested router.
+    let app = Router::new()
+        .merge(room_routes.clone())
+        .nest("/api", room_routes)
         .layer(middleware::from_fn_with_state(state.clone(), rate_limit))
         .layer(
             CorsLayer::new()
