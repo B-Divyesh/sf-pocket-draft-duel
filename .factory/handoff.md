@@ -2,15 +2,15 @@
 
 ## Release status
 
-**Verdict: PASS.** Independent verification 3 found zero defects and zero
-untested public claims.
+**Verdict: PASS.** Strict review 1 found zero defects and zero untested public
+claims.
 
 - Product: Pocket Draft Duel (`browser-game`)
 - Live URL: `https://pocket-draft-duel.sociobot.in`
 - Implementation candidate: `9430a3bd007c9ac02c18389c5e9cbd6aa8b33c11`
-- Documentation evidence reviewed: `0ee9e1ed1a1ae06ec3983e7ad6da910f77796bc6`
+- Documentation baseline reviewed: `ebe4de1d5b6ff46a243d06f1cb3ca5def91bad36`
 - Existing room-service build: `84973460a8db421f14bfaec3b87bc66d177cc1ba`
-- Verification report: `.factory/verification-3.md`
+- Review report: `.factory/review-1.md`
 
 The live JavaScript and CSS match the candidate build byte for byte. The room
 service remains the existing product-owned Rust/SQLite build.
@@ -26,7 +26,7 @@ service remains the existing product-owned Rust/SQLite build.
 
 Fresh desktop and Pixel 5 contexts showed all three before scrolling.
 
-## Independent verification
+## Strict review 1
 
 - All 14 declared claim commands passed separately from a fresh clone.
 - `npm test`, `npm run build`, and `npm run realtime:test` passed.
@@ -43,11 +43,11 @@ Fresh desktop and Pixel 5 contexts showed all three before scrolling.
   errors or serious/critical accessibility violations.
 - Pixel targets are at least 44 × 44 CSS px. Keyboard Enter and Space, focus,
   Back navigation, reduced motion, and 200% text checks passed.
-- Lighthouse scored 99/100/100/100. LCP was 1.29 s, TBT 121 ms, and CLS 0.029.
-- Measured animation-frame delivery was 60.6 fps desktop and 60.5 fps Pixel 5.
+- Lighthouse scored 100/100/100/100. LCP was 1.23 s, TBT 0 ms, and CLS 0.029.
+- Measured animation-frame delivery was 60.8 fps desktop and 60.4 fps Pixel 5.
 
-Evidence is under `/work/.evidence/verification-3/`. The full results and the
-disposition of every earlier finding are in `.factory/verification-3.md`.
+Evidence is under `/work/.evidence/review-1/`. The full results and the
+disposition of every earlier finding are in `.factory/review-1.md`.
 
 ## How to verify
 
