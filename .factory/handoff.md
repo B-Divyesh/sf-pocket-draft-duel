@@ -2,20 +2,18 @@
 
 ## Release status
 
-**Verdict: PASS.** This repair closes all three findings from independent
-verification 2.
+**Verdict: PASS.** Independent verification 3 found zero defects and zero
+untested public claims.
 
 - Product: Pocket Draft Duel (`browser-game`)
 - Live URL: `https://pocket-draft-duel.sociobot.in`
-- Static implementation commit: `9430a3bd007c9ac02c18389c5e9cbd6aa8b33c11`
-- Documentation evidence commit: `faa1093dc7d05a206e210e9fc8558202cf52f966`
+- Implementation candidate: `9430a3bd007c9ac02c18389c5e9cbd6aa8b33c11`
+- Documentation evidence reviewed: `0ee9e1ed1a1ae06ec3983e7ad6da910f77796bc6`
 - Existing room-service build: `84973460a8db421f14bfaec3b87bc66d177cc1ba`
+- Verification report: `.factory/verification-3.md`
 
-The static client was deployed to the existing `sf-pocket-draft-duel` product
-app. The product-owned `sf-pocket-draft-duel-realtime` service was not changed:
-its single-replica durable SQLite configuration, `/data` volume, environment,
-and health probe were preserved. Its live `/api/health` response remains healthy
-and reports the existing room-service build above.
+The live JavaScript and CSS match the candidate build byte for byte. The room
+service remains the existing product-owned Rust/SQLite build.
 
 ## Job, audience, and first action
 
@@ -28,28 +26,32 @@ and reports the existing room-service build above.
 
 Fresh desktop and Pixel 5 contexts showed all three before scrolling.
 
-## What changed
+## Independent verification
 
-1. **Stable stale-token recovery.** Rendering no longer triggers room loading.
-   URL recovery runs once per room code, a 401 clears only that stale local
-   reconnect token, stops polling, shows one clear recovery message, and
-   pre-fills the join form with the room code. A URL with no saved token now
-   also renders that stable join path without calling the API.
-2. **44 × 44 px touch controls.** Links now have 44 px minimum boxes, and demo
-   reset/start controls retain a 44 px minimum height. This covers the demo
-   exits, wordmark, footer legal links, and existing navigation controls.
-3. **Tested rotating priority.** Added the public
-   `rotating-draft-priority` claim. Its real HTTP/SQLite check fills a
-   three-player room, has every seat contest the same card in all three draft
-   rounds, and observes the winning seat advance through all three seats.
+- All 14 declared claim commands passed separately from a fresh clone.
+- `npm test`, `npm run build`, and `npm run realtime:test` passed.
+- The build produced `dist/`; initial JS is 10.48 KB gzip and CSS is 4.90 KB
+  gzip.
+- A live sample completed three drafts and battles to a result, retained its
+  demo label, reset cleanly, and did not touch seeded real-room storage.
+- Independent live desktop and phone clients completed a room, reloaded the
+  same result, and started a rematch.
+- Stale-token recovery made one request and left a stable prefilled join form.
+- Live boundary, token-isolation, CORS, and rate-limit checks passed, including
+  429 with `Retry-After: 60`.
+- The worker URL check and Axe route checks passed with no unexpected console
+  errors or serious/critical accessibility violations.
+- Pixel targets are at least 44 × 44 CSS px. Keyboard Enter and Space, focus,
+  Back navigation, reduced motion, and 200% text checks passed.
+- Lighthouse scored 99/100/100/100. LCP was 1.29 s, TBT 121 ms, and CLS 0.029.
+- Measured animation-frame delivery was 60.6 fps desktop and 60.5 fps Pixel 5.
 
-The product-specific design record now explicitly names the 44 × 44 CSS px
-touch target treatment. README and room-service documentation describe the
-same next-seat rotation rule.
+Evidence is under `/work/.evidence/verification-3/`. The full results and the
+disposition of every earlier finding are in `.factory/verification-3.md`.
 
-## Verification
+## How to verify
 
-From a clean dependency install with Node 22+, npm, and current Rust/Cargo:
+Use Node 22+, npm, and current Rust/Cargo:
 
 ```sh
 npm ci
@@ -58,65 +60,12 @@ npm run build
 npm run realtime:test
 ```
 
-- `npm test` passed: deterministic unit rules, real HTTP/SQLite isolation and
-  restart persistence, independent two-browser room play through result and
-  rematch, and all 24 desktop/phone browser checks.
-- `npm run realtime:test` passed all 3 Rust rule/privacy tests.
-- `npm run build` passed and produced `dist/`. Initial JavaScript is 10.48 KB
-  gzip and CSS is 4.90 KB gzip.
-- All 14 commands in `.factory/claims.json` were run individually and passed,
-  including `@claim:rotating-draft-priority`.
-- The new browser regressions prove one stale-token request only, preserved
-  room-code recovery, no request for a tokenless room URL, and measured
-  44 × 44 px demo/navigation targets.
-
-## Live verification after deployment
-
-- A fresh desktop client entered `/demo`, saw six populated cards and the
-  persistent sample banner, advanced a draft, reset to Draft 1, made no `/api`
-  request, and left a seeded real-room storage value unchanged.
-- Fresh desktop host and Pixel 5 guest created/joined a real two-player room,
-  completed all three drafts and battles to a visible result, reloaded the host
-  into the same result, and started a rematch.
-- A fresh stale-token browser made exactly one live reconnect request in 700 ms,
-  displayed the recovery message, and retained the joinable room code.
-- `/opt/fleet/lib/verify-url.sh` passed for the HTTPS root: HTTP 200, no console
-  errors, title, `lang`, one h1, main landmark, and complete image alt text.
-- Live Playwright Axe had zero serious or critical violations and no console
-  errors on `/`, `/demo`, `/privacy`, `/terms`, and the designed not-found
-  route.
-- Live Pixel 5 measurements confirm Reset demo, Start for real, the wordmark,
-  and footer Privacy/Terms controls are each at least 44 × 44 CSS px.
-- Lighthouse mobile-style run scored 100 performance, 100 accessibility, 100
-  best practices, and 100 SEO; LCP was 1.3 s, total blocking time 30 ms, and
-  CLS 0.029.
-- HTTPS still sends CSP, Permissions-Policy, HSTS, Referrer-Policy, and
-  `nosniff`. Required public routes returned 200; a missing asset returned the
-  expected HTTP 404.
-
-Evidence includes `/work/.evidence/repair-2-live-desktop-result.png`,
-`/work/.evidence/repair-2-live-phone-result.png`,
-`/work/.evidence/repair-2-live-recovery.png`,
-`/work/.evidence/repair-2-url/`, and
-`/work/.evidence/repair-2-lighthouse-retry.json`.
-
-## Earlier findings
-
-| Earlier finding | Current disposition |
-| --- | --- |
-| Live `/api` fell through to the static app and rooms failed | Still fixed; fresh independent live clients completed a room and rematch. |
-| CSP and Permissions-Policy were absent on HTTPS | Still fixed; both headers are present after this deployment. |
-| Realtime guarantees lacked individual claims | Still fixed; all former realtime claims pass individually, and rotating draft priority now has its own claim. |
-| First clean room test could time out while Cargo compiled | Still fixed; `npm test` builds the owned service and passed after `npm ci`. |
-| Stale room tokens looped reconnect requests | Fixed; one request leads to a stable, pre-filled join recovery state. |
-| Demo/navigation/legal touch targets were below 44 px | Fixed and measured on the live Pixel 5 context. |
+Run any command in `.factory/claims.json` separately to reproduce that public
+claim. Open `/demo` for the isolated sample.
 
 ## Known dependency
 
-The paid Stone and Market host set unlock remains a visible $4.99 one-time
-offer. Billing registration, checkout, and genuine server-side entitlement are
-still unavailable because they belong to the separate billing-registration
-operator. The free Marsh game is complete and unchanged. Public metadata is in
-`.factory/billing-offer.json` and copied to `/work/.evidence/billing-offer.json`;
-the verb-first catalog description is copied to
-`/work/.evidence/catalog-description.txt`.
+The visible $4.99 Stone and Market host set unlock remains unavailable until
+the separate operator registers billing. Checkout and activation are disabled
+and are not claimed to work. The free Marsh sample and real-room game are
+complete.
