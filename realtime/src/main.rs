@@ -16,7 +16,7 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicU64, Ordering},
     },
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tower_http::{
     cors::{AllowOrigin, CorsLayer},
@@ -247,7 +247,11 @@ fn clean_name(value: &str) -> ApiResult<String> {
 
 fn init_db(path: &str) -> Result<(), rusqlite::Error> {
     let connection = Connection::open(path)?;
-    connection.execute_batch("CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, state TEXT NOT NULL, updated_at INTEGER NOT NULL);")?;
+    // Azure Files can retain an SMB lock briefly while a one-replica revision
+    // is being replaced. Waiting here keeps the durable room database intact
+    // instead of crash-looping into another lock attempt.
+    connection.busy_timeout(Duration::from_secs(90))?;
+    connection.execute_batch("PRAGMA journal_mode=DELETE; CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, state TEXT NOT NULL, updated_at INTEGER NOT NULL);")?;
     Ok(())
 }
 
