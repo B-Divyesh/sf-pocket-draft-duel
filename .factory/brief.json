@@ -1,0 +1,31 @@
+{
+  "slug": "pocket-draft-duel",
+  "title": "Pocket Draft Duel",
+  "territory": "games-creative",
+  "user": "Two to four friends who want a 15-minute tactical card-game session by room code, with a new fair draft each run and no collection, login, or deck building beforehand.",
+  "evidence": [
+    {
+      "url": "https://hn.algolia.com/api/v1/items/42983699",
+      "date": "2025-02-08",
+      "quote_or_summary": "Discussion of The Deck says a compelling digital game-night use case is letting people create and share their own game rules, while another commenter values one-host/scan-to-join setup."
+    },
+    {
+      "url": "https://github.com/xajik/thedeck",
+      "date": "2026-09-01 (accessed)",
+      "quote_or_summary": "The Deck is an open-source mobile turn-by-turn card-game engine, demonstrating infrastructure exists but not a focused browser game built around a fresh short-session draft."
+    }
+  ],
+  "recurrence": "Game-night participants repeatedly value no-search, one-host joining and flexible rules, yet general engines leave the actual approachable game to somebody else.",
+  "current_workaround": "Bring a physical deck, install a card app, or teach a longer collectible-card game.",
+  "incumbents_and_gap": "The Deck, Board Game Arena, and Codenames-style sites support particular games or engines; they do not offer a browser-native micro-draft whose preparation is the game.",
+  "smallest_useful_product": "Room-code 2\u20134 player simultaneous draft of 18 public-domain-icon cards, then three three-minute battles with one chosen tactic per round. Non-goals: collectible cards, ranked ladder, chat, or custom-card publishing.",
+  "success_measure": "60% of completed rooms launch a rematch and median time from URL open to first pick is below two minutes.",
+  "artifact_class": "browser-game",
+  "monetization": "one-time \u2014 a modest host unlock for additional balanced draft sets fits a contained game better than a recurring charge.",
+  "constraints": "Use original/public-domain art only; server-authoritative simultaneous picks; do not create a gambling-like economy or paid random packs.",
+  "est_build_effort": "M",
+  "scale": "small (default)",
+  "why_distinct": "It turns the shared draft into a complete, repeatable run instead of recreating a collectible card game or generic engine.",
+  "confidence": 3,
+  "state": "ADMITTED"
+}
