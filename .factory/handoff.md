@@ -1,159 +1,122 @@
 # Pocket Draft Duel handoff
 
-## Independent verification 2
+## Release status
 
-**Verdict: FAIL.** Independent QA on 2026-09-06 reviewed implementation
-`84973460a8db421f14bfaec3b87bc66d177cc1ba`, documentation evidence
-`076ff0e6fe68ba49a6f2b09c426d578c7299aed7`, and the report-only base
-`b3912b5b6440982e6d622c1a5078d0b80bbd0ccf`.
-
-The live sample and the real room-code game work from draft through three
-battles, result, reconnect, and rematch. A fresh desktop host and Pixel 5 guest
-completed the same live room. All 13 declared claim commands, the cold full
-suite, Rust tests, and the production build passed. Mobile Lighthouse scored
-100 in performance, accessibility, best practices, and SEO.
-
-Verification still found three issues:
-
-1. A stale saved room token causes an unbounded reconnect/render loop. A
-   controlled check recorded 30 requests in 600 ms; a room URL with no token
-   also gives no stable explanation or prefilled code.
-2. Demo reset/start links and several navigation/legal links have phone target
-   heights below the required 44 px.
-3. The public statement that collision priority rotates has no declared,
-   individually runnable claim test. This leaves one untested claim.
-
-The complete evidence and reproduction details are in
-`.factory/verification-2.md`. Screenshots, URL-verifier output, and Lighthouse
-JSON are under `/work/.evidence/verification-2-live/` and
-`/work/.evidence/verification-2-url/`.
-
-## Current live release
+**Verdict: PASS.** This repair closes all three findings from independent
+verification 2.
 
 - Product: Pocket Draft Duel (`browser-game`)
 - Live URL: `https://pocket-draft-duel.sociobot.in`
-- Job: Two to four friends draft shared cards, play three tactical battles, and
-  get one result by room code.
-- Audience: Friends who want a short fresh card game without accounts,
+- Static implementation commit: `9430a3bd007c9ac02c18389c5e9cbd6aa8b33c11`
+- Documentation evidence commit: recorded in the report follow-up revision
+- Existing room-service build: `84973460a8db421f14bfaec3b87bc66d177cc1ba`
+
+The static client was deployed to the existing `sf-pocket-draft-duel` product
+app. The product-owned `sf-pocket-draft-duel-realtime` service was not changed:
+its single-replica durable SQLite configuration, `/data` volume, environment,
+and health probe were preserved. Its live `/api/health` response remains healthy
+and reports the existing room-service build above.
+
+## Job, audience, and first action
+
+- **Job:** Two to four friends draft shared cards, play three tactical battles,
+  and get one result by room code.
+- **Audience:** Friends who want a short card game without accounts,
   collections, deck building, chat, or ranked play.
-- First action: **Try it with sample data** opens a populated four-player
+- **First action:** **Try it with sample data** opens a populated four-player
   practice draft immediately.
-- Actual deployed implementation SHA:
-  `84973460a8db421f14bfaec3b87bc66d177cc1ba`
-- Documentation and verification revision:
-  `076ff0e6fe68ba49a6f2b09c426d578c7299aed7` (the preceding handoff commit;
-  this report-only follow-up records that distinct revision).
-- Static deployment: `a77a6ba4-e474-431a-94e5-b35852e6aa54`.
-- Realtime image:
-  `sociobotregistry.azurecr.io/sf-pocket-draft-duel-realtime@sha256:9c9cc334815df9df33a6886b086fe84c82a21b1b28c963daa73f67f4f9846308`.
 
-The product has a product-owned linked room service,
-`sf-pocket-draft-duel-realtime`. It is healthy as one active revision and one
-replica, with a durable `/data` mount. `GET /api/health` currently returns the
-implementation SHA above. The public static app is the only public path to the
-linked backend; this is intentional.
+Fresh desktop and Pixel 5 contexts showed all three before scrolling.
 
-## What was repaired
+## What changed
 
-| Earlier finding | Current disposition |
-| --- | --- |
-| `/api` served the static fallback and `POST /api/rooms` returned 405 | Fixed. The built `dist/` now contains the Static Web App configuration, its fallback excludes `/api/*`, and the product-owned container app is linked as the backend. The backend accepts both local root routes and production `/api` routes. A public `POST /api/rooms` returned 201, and two fresh browsers completed a live room. |
-| CSP and Permissions-Policy were absent from HTTPS | Fixed. The live root sends `Permissions-Policy: camera=(), microphone=(), geolocation=()` and the configured self-only CSP, including `frame-ancestors 'none'`. |
-| Public realtime guarantees had no independent claim commands | Fixed. Five public realtime claims now have individually runnable `@claim:` checks: room codes/rematch, hidden simultaneous picks, restart/reconnect, deterministic resolution, and 429/Retry-After. |
-| First clean `npm test` could time out compiling Rust | Fixed. Rust/Cargo is documented as a prerequisite, `test:realtime` builds the binary before browser checks, and the browser readiness wait allows a cold compile. A clean Rust target then completed `npm test`. |
+1. **Stable stale-token recovery.** Rendering no longer triggers room loading.
+   URL recovery runs once per room code, a 401 clears only that stale local
+   reconnect token, stops polling, shows one clear recovery message, and
+   pre-fills the join form with the room code. A URL with no saved token now
+   also renders that stable join path without calling the API.
+2. **44 × 44 px touch controls.** Links now have 44 px minimum boxes, and demo
+   reset/start controls retain a 44 px minimum height. This covers the demo
+   exits, wordmark, footer legal links, and existing navigation controls.
+3. **Tested rotating priority.** Added the public
+   `rotating-draft-priority` claim. Its real HTTP/SQLite check fills a
+   three-player room, has every seat contest the same card in all three draft
+   rounds, and observes the winning seat advance through all three seats.
 
-The integration run now also proves room isolation: a reconnect token from one
-room receives 401 when reading another room. This product has no account or
-shared-tenant model; room code plus its random token is its access boundary.
-
-## Product behaviour
-
-- The free Marsh set offers a complete game: three simultaneous draft picks,
-  three finite card-and-tactic battles, a deterministic result, and host
-  rematch.
-- The one-click `/demo` sample is separate from real rooms. It keeps only
-  `demo:pocket-draft-duel:*` browser data, shows the persistent **Demo — sample
-  data, nothing is saved** banner, has **Reset demo**, and does not call `/api`.
-- Live rooms persist their room state and reconnect tokens in product SQLite.
-  Service responses never expose another player's hand or pending pick.
-- The service has a health endpoint, 60 room requests per minute per forwarded
-  client address, and `429` with `Retry-After: 60` after the allowance.
-- Stone and Market balanced draft sets remain a $4.99 one-time host unlock. No
-  checkout, license validation, invented activation, or paid random packs are
-  present while billing registration is unavailable.
+The product-specific design record now explicitly names the 44 × 44 CSS px
+touch target treatment. README and room-service documentation describe the
+same next-seat rotation rule.
 
 ## Verification
 
-From the documented setup after `npm ci` (Node 22+ and current Rust/Cargo), the
-following final checks passed:
+From a clean dependency install with Node 22+, npm, and current Rust/Cargo:
 
 ```sh
+npm ci
 npm test
 npm run build
-npm run test:realtime
+npm run realtime:test
 ```
 
-`npm test` passed all rule, real HTTP/SQLite, two-browser realtime, and
-Playwright checks (18 browser tests). The real service test verifies room token
-isolation, a two-client game, service-restart persistence/reconnect, health,
-and 429 with `Retry-After`. The two-browser test reaches a visible result,
-reloads the host, and starts a rematch.
+- `npm test` passed: deterministic unit rules, real HTTP/SQLite isolation and
+  restart persistence, independent two-browser room play through result and
+  rematch, and all 24 desktop/phone browser checks.
+- `npm run realtime:test` passed all 3 Rust rule/privacy tests.
+- `npm run build` passed and produced `dist/`. Initial JavaScript is 10.48 KB
+  gzip and CSS is 4.90 KB gzip.
+- All 14 commands in `.factory/claims.json` were run individually and passed,
+  including `@claim:rotating-draft-priority`.
+- The new browser regressions prove one stale-token request only, preserved
+  room-code recovery, no request for a tokenless room URL, and measured
+  44 × 44 px demo/navigation targets.
 
-Every command in `.factory/claims.json` was run individually and passed. This
-includes the five new room-service commands, not only the broad test suite.
-The production build writes `dist/`; initial JavaScript is 10.14 KB gzip and
-CSS is 4.89 KB gzip.
+## Live verification after deployment
 
-Live checks passed on the cold HTTPS product:
+- A fresh desktop client entered `/demo`, saw six populated cards and the
+  persistent sample banner, advanced a draft, reset to Draft 1, made no `/api`
+  request, and left a seeded real-room storage value unchanged.
+- Fresh desktop host and Pixel 5 guest created/joined a real two-player room,
+  completed all three drafts and battles to a visible result, reloaded the host
+  into the same result, and started a rematch.
+- A fresh stale-token browser made exactly one live reconnect request in 700 ms,
+  displayed the recovery message, and retained the joinable room code.
+- `/opt/fleet/lib/verify-url.sh` passed for the HTTPS root: HTTP 200, no console
+  errors, title, `lang`, one h1, main landmark, and complete image alt text.
+- Live Playwright Axe had zero serious or critical violations and no console
+  errors on `/`, `/demo`, `/privacy`, `/terms`, and the designed not-found
+  route.
+- Live Pixel 5 measurements confirm Reset demo, Start for real, the wordmark,
+  and footer Privacy/Terms controls are each at least 44 × 44 CSS px.
+- Lighthouse mobile-style run scored 100 performance, 100 accessibility, 100
+  best practices, and 100 SEO; LCP was 1.3 s, total blocking time 30 ms, and
+  CLS 0.029.
+- HTTPS still sends CSP, Permissions-Policy, HSTS, Referrer-Policy, and
+  `nosniff`. Required public routes returned 200; a missing asset returned the
+  expected HTTP 404.
 
-- Fresh desktop and Pixel 5 contexts showed the job, audience, and sample
-  first action before scrolling, with no page or console errors.
-- A fresh live sample opened six realistic draft cards, retained its persistent
-  sample label after a pick, reset to Draft 1, left a real-room localStorage
-  marker unchanged, and made no `/api` request.
-- Fresh desktop host and Pixel 5 guest completed a real two-player room from
-  lobby through three drafts and three battles to the result. The host reloaded
-  into the same room and started a rematch. Evidence screenshots are
-  `/work/.evidence/live-room-result.png` and
-  `/work/.evidence/live-room-phone-result.png`.
-- `/opt/fleet/lib/verify-url.sh https://pocket-draft-duel.sociobot.in/`
-  returned 200 with no console errors and verified title, `lang`, one h1,
-  `<main>`, image alt text, and labelled buttons. Its desktop and phone output
-  is in `/work/.evidence/final-live/`.
-- Playwright Axe found no serious or critical issues on `/`, `/demo`,
-  `/privacy`, `/terms`, and the designed not-found route. This is the supported
-  Axe route in this worker; the standalone CLI could not start its separate
-  Chrome session in the worker image.
-- `GET /api/health` returned 200 with the deployed implementation SHA, and the
-  live root returned CSP, Permissions-Policy, `nosniff`, and Referrer-Policy.
+Evidence includes `/work/.evidence/repair-2-live-desktop-result.png`,
+`/work/.evidence/repair-2-live-phone-result.png`,
+`/work/.evidence/repair-2-live-recovery.png`,
+`/work/.evidence/repair-2-url/`, and
+`/work/.evidence/repair-2-lighthouse-retry.json`.
 
-## Deployment details and constraints
+## Earlier findings
 
-- The static deployment must retain `dist/staticwebapp.config.json`; the build
-  copies it there deliberately. It provides SPA routing, the designed 404,
-  security headers, and the `/api/*` fallback exclusion.
-- The room service must remain one active revision and one replica. Its durable
-  Azure Files SQLite database uses SQLite's `nolock` URI and memory journal to
-  avoid unsupported SMB rollback-journal locks. That configuration is safe only
-  with the enforced single-process bound; the database file itself remains on
-  the durable product mount.
-- The container runs as the mount-owning runtime user because the fleet Azure
-  Files mount did not grant the image's non-root user write access. This is a
-  deployment constraint, not an application permission model; it should be
-  revisited if the fleet mount ownership changes.
-- A deployment wrapper stopped during custom-domain certificate polling after
-  the successful app deployment. The active revision, linked `/api` path,
-  durable volume, probes, and public HTTPS checks above confirm the product
-  deployment itself succeeded.
+| Earlier finding | Current disposition |
+| --- | --- |
+| Live `/api` fell through to the static app and rooms failed | Still fixed; fresh independent live clients completed a room and rematch. |
+| CSP and Permissions-Policy were absent on HTTPS | Still fixed; both headers are present after this deployment. |
+| Realtime guarantees lacked individual claims | Still fixed; all former realtime claims pass individually, and rotating draft priority now has its own claim. |
+| First clean room test could time out while Cargo compiled | Still fixed; `npm test` builds the owned service and passed after `npm ci`. |
+| Stale room tokens looped reconnect requests | Fixed; one request leads to a stable, pre-filled join recovery state. |
+| Demo/navigation/legal touch targets were below 44 px | Fixed and measured on the live Pixel 5 context. |
 
 ## Known dependency
 
-Billing registration is owned by the separate operator. The actual advertised
-$4.99 one-time host set unlock remains unavailable until that operator registers
-the offer and the product gets genuine server-side license validation. Public
-offer metadata is at `/work/.evidence/billing-offer.json`; the free game and
-live room-code path work without it.
-
-The catalog description is verb-first and under 120 characters in
-`.factory/catalog-description.txt`, copied to
+The paid Stone and Market host set unlock remains a visible $4.99 one-time
+offer. Billing registration, checkout, and genuine server-side entitlement are
+still unavailable because they belong to the separate billing-registration
+operator. The free Marsh game is complete and unchanged. Public metadata is in
+`.factory/billing-offer.json` and copied to `/work/.evidence/billing-offer.json`;
+the verb-first catalog description is copied to
 `/work/.evidence/catalog-description.txt`.
